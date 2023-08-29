@@ -23,8 +23,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 uMod_Settings::uMod_Settings(void)
 {
-  XSize = 800;
-  YSize = 700;
+  XSize = 600;
+  YSize = 400;
   XPos = -1;
   YPos = -1;
   UseHook = false;
@@ -118,31 +118,11 @@ int uMod_Settings::Load(void)
     }
   }
 
-  // get display size
-  int width, height;
-  wxDisplaySize( &width, &height);
-
-  // correct the size and the position of the window according to the dispplay size
-  if (XSize>width) XSize = width;
-  if (YSize>height) YSize = height;
-  if (XSize<50) XSize = 50;
-  if (YSize<50) YSize = 50;
-
-  if (XPos>width-XSize) XPos = width-XSize;
-  if (YPos>height-YSize) YPos = height-YSize;
-  if (XPos<0) XPos = 0;
-  if (YPos<0) YPos = 0;
-
   return 0;
 }
 
 int uMod_Settings::Save(void)
 {
-  if (XSize<10 || XSize>50000) return -1;
-  if (YSize<10 || YSize>50000) return -1;
-  if (XPos<10 || XPos>50000) return -1;
-  if (YPos<10 || YPos>50000) return -1;
-
   wxFile file;
   file.Open(SETTINGS_FILE, wxFile::write);
   if (!file.IsOpened()) return -1;

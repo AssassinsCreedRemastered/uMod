@@ -25,125 +25,183 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 */
 
 
-#include "uMod_DX9_dll.h"
-#include "uMod_IDirect3D9.h"
-#include "uMod_IDirect3D9Ex.h"
+#include "uMod_Main.h"
+//#include "detours.h"
+//#include "detourxs/detourxs/detourxs.h"
 
-
+/*
+#include "detourxs/detourxs/ADE32.cpp"
+#include "detourxs/detourxs/detourxs.cpp"
+*/
 /*
  * global variable which are not linked external
  */
-#if INJECTION_METHOD==NO_INJECTION
-HINSTANCE             gl_hOriginal_DX9_Dll = NULL;
-#endif
-
-
-#if INJECTION_METHOD==DIRECT_INJECTION || INJECTION_METHOD==HOOK_INJECTION
+HINSTANCE             gl_hOriginalDll = NULL;
+HINSTANCE             gl_hThisInstance = NULL;
+uMod_TextureServer*    gl_TextureServer = NULL;
+HANDLE                gl_ServerThread = NULL;
 
 typedef IDirect3D9 *(APIENTRY *Direct3DCreate9_type)(UINT);
 typedef HRESULT (APIENTRY *Direct3DCreate9Ex_type)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
 
-uMod_Detour_Entry<Direct3DCreate9_type> Detour_Direct3DCreate9(5);
-uMod_Detour_Entry<Direct3DCreate9Ex_type> Detour_Direct3DCreate9Ex(5);
-
+#ifndef NO_INJECTION
+Direct3DCreate9_type Direct3DCreate9_fn; // we need to store the pointer to the original Direct3DCreate9 function after we have done a detour
+Direct3DCreate9Ex_type Direct3DCreate9Ex_fn; // we need to store the pointer to the original Direct3DCreate9 function after we have done a detour
+HHOOK gl_hHook = NULL;
 #endif
 
 
 
-void InitDX9(void)
+
+/*
+ * global variable which are linked external
+ */
+unsigned int          gl_ErrorState = 0u;
+
+#ifdef LOG_MESSAGE
+FILE*                 gl_File = NULL;
+#endif
+
+
+#ifdef DIRECT_INJECTION
+void Nothing(void) {(void)NULL;}
+#endif
+/*
+ * dll entry routine, here we initialize or clean up
+ */
+BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+  UNREFERENCED_PARAMETER(lpReserved);
+
+  switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+	{
+	  InitInstance(hModule);
+		break;
+	}
+	case DLL_PROCESS_DETACH:
+	{
+	  ExitInstance();
+	  break;
+	}
+  default:  break;
+	}
+    
+  return (true);
+}
+
+
+DWORD WINAPI ServerThread( LPVOID lpParam )
+{
+  UNREFERENCED_PARAMETER(lpParam);
+  if (gl_TextureServer!=NULL) gl_TextureServer->MainLoop(); //This is and endless mainloop, it sleep till something is written into the pipe.
+  return (0);
+}
+
+void InitInstance(HINSTANCE hModule)
 {
 
-#if INJECTION_METHOD==DIRECT_INJECTION || INJECTION_METHOD==HOOK_INJECTION
+  DisableThreadLibraryCalls( hModule ); //reduce overhead
 
+  gl_hThisInstance = (HINSTANCE)  hModule;
+
+  wchar_t game[MAX_PATH];
+  if (HookThisProgram( game)) //ask if we need to hook this program
+  {
+    OpenMessage();
+    Message("InitInstance: %lu\n", hModule);
+
+    gl_TextureServer = new uMod_TextureServer(game); //create the server which listen on the pipe and prepare the update for the texture clients
+
+    LoadOriginalDll();
+
+#ifndef NO_INJECTION
+    // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
+    Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
+    if (Direct3DCreate9_fn!=NULL)
+    {
+      Message("Detour: Direct3DCreate9\n");
+      Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+    }
+
+    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
+    if (Direct3DCreate9Ex_fn!=NULL)
+    {
+      Message("Detour: Direct3DCreate9Ex\n");
+      Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+    }
+#endif
+
+    if (gl_TextureServer->OpenPipe(game)) //open the pipe and send the name+path of this executable
+    {
+      Message("InitInstance: Pipe not opened\n");
+      return;
+    }
+
+    gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
+    if (gl_ServerThread==NULL) {Message("InitInstance: Serverthread not started\n");}
+
+  }
+}
+
+void LoadOriginalDll(void)
+{
   char buffer[MAX_PATH];
-  wchar_t buffer_w[MAX_PATH];
   GetSystemDirectory(buffer,MAX_PATH); //get the system directory, we need to open the original d3d9.dll
 
-  swprintf_s( buffer_w, MAX_PATH, L"%s\\d3d9.dll", buffer);
+  // Append dll name
   strcat_s( buffer, MAX_PATH,"\\d3d9.dll");
 
-  Detour_Direct3DCreate9.SetFunctionName( "Direct3DCreate9");
-  Detour_Direct3DCreate9.SetTargetFunction( uMod_Direct3DCreate9);
-  Detour_Direct3DCreate9.SetLibName( "d3d9.dll");
-  Detour_Direct3DCreate9.SetFullLibName( buffer);
-  Detour_Direct3DCreate9.SetLibName( L"d3d9.dll"); // set also for wide character
-  Detour_Direct3DCreate9.SetFullLibName( buffer_w); // set also for wide character
+  // try to load the system's d3d9.dll, if pointer empty
+  if (!gl_hOriginalDll) gl_hOriginalDll = LoadLibrary(buffer);
 
-  Detour_Direct3DCreate9Ex.SetFunctionName( "Direct3DCreate9Ex");
-  Detour_Direct3DCreate9Ex.SetTargetFunction( uMod_Direct3DCreate9Ex);
-  Detour_Direct3DCreate9Ex.SetLibName( "d3d9.dll");
-  Detour_Direct3DCreate9Ex.SetFullLibName( buffer);
-  Detour_Direct3DCreate9Ex.SetLibName( L"d3d9.dll"); // set also for wide character
-  Detour_Direct3DCreate9Ex.SetFullLibName( buffer_w); // set also for wide character
-
-  GlobalDetour.AddEntry(&Detour_Direct3DCreate9);
-  GlobalDetour.AddEntry(&Detour_Direct3DCreate9Ex);
-  //char buffer[MAX_PATH];
-  //if (gl_hOriginal_DX9_Dll==NULL)
+  if (!gl_hOriginalDll)
   {
-    GetSystemDirectory(buffer,MAX_PATH); //get the system directory, we need to open the original d3d9.dll
-
-    // Append dll name
-    strcat_s( buffer, MAX_PATH,"\\d3d9.dll");
-
-    // try to load the system's d3d9.dll
-    HANDLE gl_hOriginal_DX9_Dll = LoadLibrary(buffer);
+    ExitProcess(0); // exit the hard way
   }
-#endif
-
-#if INJECTION_METHOD==NO_INJECTION
-  LoadOriginal_DX9_Dll();
-#endif
 }
 
-void ExitDX9(void)
+void ExitInstance()
 {
-  // Release the system's d3d9.dll
-#if INJECTION_METHOD==NO_INJECTION
-  if (gl_hOriginal_DX9_Dll!=NULL)
+  if (gl_TextureServer!=NULL)
   {
-    FreeLibrary(gl_hOriginal_DX9_Dll);
-    gl_hOriginal_DX9_Dll = NULL;
+    gl_TextureServer->ClosePipe(); //This must be done before the server thread is killed, because the server thread will endless wait on the ReadFile()
   }
-#endif
+  if (gl_ServerThread!=NULL)
+  {
+    CloseHandle(gl_ServerThread); // kill the server thread
+    gl_ServerThread = NULL;
+  }
+  if (gl_TextureServer!=NULL)
+  {
+    delete gl_TextureServer; //delete the texture server
+    gl_TextureServer = NULL;
+  }
 
+  // Release the system's d3d9.dll
+  if (gl_hOriginalDll!=NULL)
+  {
+    FreeLibrary(gl_hOriginalDll);
+    gl_hOriginalDll = NULL;
+  }
 
-#if INJECTION_METHOD==DIRECT_INJECTION || INJECTION_METHOD==HOOK_INJECTION
-#endif
-
+  CloseMessage();
 }
 
-
-
-
-#if INJECTION_METHOD==NO_INJECTION
+#ifdef NO_INJECTION
 /*
  * We do not inject, the game loads this dll by itself thus we must include the Direct3DCreate9 function
  */
-void LoadOriginal_DX9_Dll(void)
-{
-  char buffer[MAX_PATH];
-  if (gl_hOriginal_DX9_Dll==NULL)
-  {
-    GetSystemDirectory(buffer,MAX_PATH); //get the system directory, we need to open the original d3d9.dll
-
-    // Append dll name
-    strcat_s( buffer, MAX_PATH,"\\d3d9.dll");
-
-    // try to load the system's d3d9.dll
-    gl_hOriginal_DX9_Dll = LoadLibrary(buffer);
-  }
-}
 
 IDirect3D9* WINAPI  Direct3DCreate9(UINT SDKVersion)
 {
   Message("WINAPI  Direct3DCreate9\n");
 
-	if (gl_hOriginal_DX9_Dll==NULL) LoadOriginal_DX9_Dll(); // looking for the "original d3d9.dll"
-	if (gl_hOriginal_DX9_Dll==NULL) return (NULL);
+	if (!gl_hOriginalDll) LoadOriginalDll(); // looking for the "right d3d9.dll"
 	
 	// find original function in original d3d9.dll
-	Direct3DCreate9_type D3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress( gl_hOriginal_DX9_Dll, "Direct3DCreate9");
+	Direct3DCreate9_type D3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9");
     
 
 	if (!D3DCreate9_fn) 
@@ -167,11 +225,10 @@ HRESULT WINAPI  Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex **ppD3D)
 {
   Message("WINAPI  Direct3DCreate9Ex\n");
 
-  if (gl_hOriginal_DX9_Dll==NULL) LoadOriginal_DX9_Dll(); // looking for the "original d3d9.dll"
-  if (gl_hOriginal_DX9_Dll==NULL) return (NULL);
+  if (!gl_hOriginalDll) LoadOriginalDll(); // looking for the "right d3d9.dll"
 
   // find original function in original d3d9.dll
-  Direct3DCreate9Ex_type D3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress( gl_hOriginal_DX9_Dll, "Direct3DCreate9Ex");
+  Direct3DCreate9Ex_type D3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9Ex");
 
 
   if (!D3DCreate9Ex_fn)
@@ -193,64 +250,20 @@ HRESULT WINAPI  Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex **ppD3D)
   return (ret);
 }
 
-typedef IDirect3D9 *(APIENTRY *Direct3DCreate9_type)(UINT);
-typedef HRESULT (APIENTRY *Direct3DCreate9Ex_type)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
-
-typedef int (WINAPI *D3DPERF_BeginEvent_type)( D3DCOLOR , LPCWSTR  );
-int WINAPI D3DPERF_BeginEvent( D3DCOLOR col, LPCWSTR wszName )
+bool HookThisProgram( wchar_t *ret) //this function always return true, it is needed for the name and path of the executable
 {
-  D3DPERF_BeginEvent_type fn = (D3DPERF_BeginEvent_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_BeginEvent");
-  return fn( col, wszName);
+  wchar_t Executable[MAX_PATH];
+  GetModuleFileNameW( GetModuleHandle( NULL ), Executable, MAX_PATH ); //ask for name and path of this executable
+
+  int len = 0;
+  while (Executable[len]) {ret[len] = Executable[len]; len++;}
+  ret[len] = 0;
+  return (true);
 }
 
-typedef int (WINAPI *D3DPERF_EndEvent_type)( void );
-int WINAPI D3DPERF_EndEvent( void )
-{
-  D3DPERF_EndEvent_type fn = (D3DPERF_EndEvent_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_EndEvent");
-  return fn();
-}
-
-typedef void (WINAPI *D3DPERF_SetMarker_type)( D3DCOLOR , LPCWSTR );
-void WINAPI D3DPERF_SetMarker( D3DCOLOR col, LPCWSTR wszName )
-{
-  D3DPERF_SetMarker_type fn = (D3DPERF_SetMarker_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_SetMarker");
-  return fn( col, wszName);
-}
-
-typedef void (WINAPI *D3DPERF_SetRegion_type)( D3DCOLOR, LPCWSTR );
-void WINAPI D3DPERF_SetRegion( D3DCOLOR col, LPCWSTR wszName )
-{
-  D3DPERF_SetRegion_type fn = (D3DPERF_SetRegion_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_SetRegion");
-  return fn( col, wszName);
-}
-
-typedef BOOL (WINAPI *D3DPERF_QueryRepeatFrame_type)( void );
-BOOL WINAPI D3DPERF_QueryRepeatFrame( void )
-{
-  D3DPERF_QueryRepeatFrame_type fn = (D3DPERF_QueryRepeatFrame_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_QueryRepeatFrame");
-  return fn( );
-}
-
-typedef void (WINAPI *D3DPERF_SetOptions_type)( DWORD );
-void WINAPI D3DPERF_SetOptions( DWORD dwOptions )
-{
-  D3DPERF_SetOptions_type fn = (D3DPERF_SetOptions_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_SetOptions");
-  return fn( dwOptions);
-}
-
-typedef DWORD (WINAPI *D3DPERF_GetStatus_type)( void );
-DWORD WINAPI D3DPERF_GetStatus( void )
-{
-  D3DPERF_GetStatus_type fn = (D3DPERF_GetStatus_type) GetProcAddress( gl_hOriginal_DX9_Dll, "D3DPERF_GetStatus");
-  return fn( );
-}
-
-#endif
 
 
-
-
-#if INJECTION_METHOD==DIRECT_INJECTION || INJECTION_METHOD==HOOK_INJECTION
+#else
 
 /*
  * We inject the dll into the game, thus we retour the original Direct3DCreate9 function to our MyDirect3DCreate9 function
@@ -258,47 +271,193 @@ DWORD WINAPI D3DPERF_GetStatus( void )
 
 IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
 {
-  Message("uMod_Direct3DCreate9:  original %p, uMod %p\n", Detour_Direct3DCreate9.Function(), uMod_Direct3DCreate9);
+  Message("uMod_Direct3DCreate9:  original %lu, uMod %lu\n", Direct3DCreate9_fn, uMod_Direct3DCreate9);
+
+  // in the Internet are many tutorials for detouring functions and all of them will work without the following 5 marked lines
+  // but somehow, for me it only works, if I retour the function and calling afterward the original function
+
+  // BEGIN
+
+  LoadOriginalDll();
+
+  RetourFunc((BYTE*) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9"), (BYTE*)Direct3DCreate9_fn, 5);
+  Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9");
+
+/*
+  if (Direct3DCreate9Ex_fn!=NULL)
+  {
+    RetourFunc((BYTE*) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9Ex"), (BYTE*)Direct3DCreate9Ex_fn, 7);
+    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9Ex");
+  }
+  */
+  // END
 
   IDirect3D9 *pIDirect3D9_orig = NULL;
-  uMod_IDirect3D9 *pIDirect3D9 = NULL;
-
-  Detour_Direct3DCreate9.Retour();
-
-  pIDirect3D9_orig = Detour_Direct3DCreate9.Function()(SDKVersion); //creating the original IDirect3D9 object
-
+  if (Direct3DCreate9_fn)
+  {
+    pIDirect3D9_orig = Direct3DCreate9_fn(SDKVersion); //creating the original IDirect3D9 object
+  }
+  else return (NULL);
+  uMod_IDirect3D9 *pIDirect3D9;
   if (pIDirect3D9_orig)
   {
     pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
   }
-  Detour_Direct3DCreate9.Detour();
 
+  // we detour again
+  Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*) Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9,5);
+  /*
+  if (Direct3DCreate9Ex_fn!=NULL)
+  {
+    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*) Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex,7);
+  }
+*/
   return (pIDirect3D9); //return our object instead of the "real one"
 }
 
-
 HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
 {
-  Message( "uMod_Direct3DCreate9Ex:  original %p, uMod %p\n", Detour_Direct3DCreate9Ex.Function(), uMod_Direct3DCreate9Ex);
+  Message( "uMod_Direct3DCreate9Ex:  original %lu, uMod %lu\n", Direct3DCreate9Ex_fn, uMod_Direct3DCreate9Ex);
+
+  // in the Internet are many tutorials for detouring functions and all of them will work without the following 5 marked lines
+  // but somehow, for me it only works, if I retour the function and calling afterward the original function
+
+  // BEGIN
+
+  LoadOriginalDll();
+  /*
+  if (Direct3DCreate9_fn!=NULL)
+  {
+    RetourFunc((BYTE*) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9"), (BYTE*)Direct3DCreate9_fn, 5);
+    Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9");
+  }
+*/
+  RetourFunc((BYTE*) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9Ex"), (BYTE*)Direct3DCreate9Ex_fn, 7);
+  Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress( gl_hOriginalDll, "Direct3DCreate9Ex");
+  // END
 
   IDirect3D9Ex *pIDirect3D9Ex_orig = NULL;
-  uMod_IDirect3D9Ex *pIDirect3D9Ex = NULL;
-  HRESULT ret = D3DERR_NOTAVAILABLE;
-
-  Detour_Direct3DCreate9Ex.Retour();
-  ret = Detour_Direct3DCreate9Ex.Function()(SDKVersion, &pIDirect3D9Ex_orig); //creating the original IDirect3D9 object
+  HRESULT ret;
+  if (Direct3DCreate9Ex_fn)
+  {
+    ret = Direct3DCreate9Ex_fn(SDKVersion, &pIDirect3D9Ex_orig); //creating the original IDirect3D9 object
+  }
+  else return (D3DERR_NOTAVAILABLE);
 
   if (ret!=S_OK) return (ret);
 
+  uMod_IDirect3D9Ex *pIDirect3D9Ex;
   if (pIDirect3D9Ex_orig)
   {
     pIDirect3D9Ex = new uMod_IDirect3D9Ex( pIDirect3D9Ex_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
   }
-  Detour_Direct3DCreate9Ex.Detour();
 
+  // we detour again
+/*
+  if (Direct3DCreate9_fn!=NULL)
+  {
+    Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*) Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9,5);
+  }
+  */
+  Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*) Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex,7);
   ppD3D = (IDirect3D9Ex**) &pIDirect3D9Ex; //return our object instead of the "real one"
   return (ret);
 }
 
+bool HookThisProgram( wchar_t *ret)
+{
+  wchar_t Executable[MAX_PATH];
+  wchar_t Game[MAX_PATH];
+  GetModuleFileNameW( GetModuleHandle( NULL ), Executable, MAX_PATH ); //ask for name and path of this executable
 
+#ifdef HOOK_INJECTION
+  //we use the gloabal hook
+
+  FILE* file;
+  wchar_t *app_path = _wgetenv( L"APPDATA"); //asc for the user application directory
+  wchar_t file_name[MAX_PATH];
+  swprintf_s( file_name, MAX_PATH, L"%ls\\%ls\\%ls", app_path, uMod_APP_DIR, uMod_APP_DX9);
+  if (_wfopen_s( &file, file_name, L"rt,ccs=UTF-16LE")) return (false); // open the file in utf-16 LE mode
+
+
+  //MessageBoxW( NULL, Executable, L"test", 0);
+  while (!feof(file))
+  {
+    if ( fgetws( Game, MAX_PATH, file) != NULL ) //get each line of the file
+    {
+      //MessageBoxW( NULL, Game, L"test", 0);
+      int len = 0;
+      while (Game[len])
+      {
+        if (Game[len]==L'\r' || Game[len]==L'\n') {Game[len]=0; break;} //removing the new line symbols
+        len++;
+      }
+      if ( _wcsicmp( Executable, Game ) == 0 ) //compare both strings
+      {
+        for (int i=0; i<len; i++) ret[i] = Game[i];
+        ret[len] = 0;
+        fclose(file);
+        return (true);
+      }
+    }
+  }
+  fclose(file);
+  return (false);
+#endif
+#ifdef DIRECT_INJECTION
+  // we inject directly
+  int i=0;
+  while ( Game[i]) {ret[i]=Game[i]; i++;}
+  ret[i]=0;
+  return true;
+#endif
+}
+
+void *DetourFunc(BYTE *src, const BYTE *dst, const int len)
+{
+  BYTE *jmp = (BYTE*)malloc(len+5);
+  DWORD dwback = 0;
+  VirtualProtect(jmp, len+5, PAGE_EXECUTE_READWRITE, &dwback); //This is the addition needed for Windows 7 RC
+  VirtualProtect(src, len, PAGE_READWRITE, &dwback);
+  memcpy(jmp, src, len);    jmp += len;
+  jmp[0] = 0xE9;
+  *(DWORD*)(jmp+1) = (DWORD)(src+len - jmp) - 5;
+  memset(src, 0x90, len);
+  src[0] = 0xE9;
+  *(DWORD*)(src+1) = (DWORD)(dst - src) - 5;
+  VirtualProtect(src, len, dwback, &dwback);
+  return (jmp-len);
+}
+
+bool RetourFunc(BYTE *src, BYTE *restore, const int len)
+{
+  DWORD dwback;
+  if(!VirtualProtect(src, len, PAGE_READWRITE, &dwback))  { return (false); }
+  if(!memcpy(src, restore, len))              { return (false); }
+  restore[0] = 0xE9;
+  *(DWORD*)(restore+1) = (DWORD)(src - restore) - 5;
+  if(!VirtualProtect(src, len, dwback, &dwback))      { return (false); }
+  return (true);
+}
+
+#ifdef HOOK_INJECTION
+/*
+ * We do not change something, if our hook function is called.
+ * We need this hook only to get our dll loaded into a starting program.
+ */
+LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  return (CallNextHookEx( gl_hHook, nCode, wParam, lParam));
+}
+
+void InstallHook(void)
+{
+  gl_hHook = SetWindowsHookEx( WH_CBT, HookProc, gl_hThisInstance, 0 );
+}
+
+void RemoveHook(void)
+{
+  UnhookWindowsHookEx( gl_hHook );
+}
+#endif
 #endif

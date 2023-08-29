@@ -29,22 +29,16 @@ BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE( uMod_EVENT_TYPE, -1)
 END_DECLARE_EVENT_TYPES()
 
-class uMod_Event : public wxThreadEvent
+class uMod_Event : public wxCommandEvent
 {
 public:
   uMod_Event( wxEventType commandType = uMod_EVENT_TYPE, int id = 0 )
-  :  wxThreadEvent(commandType, id) { }
+  :  wxCommandEvent(commandType, id) { }
   virtual ~uMod_Event(void) {}
 
   // You *must* copy here the data to be transported
   uMod_Event( const uMod_Event &event )
-  :  wxThreadEvent(event)
-  { this->SetText( event.GetText().c_str());
-    Value=((uMod_Event&)event).GetValue();
-    PipeIn=((uMod_Event&)event).GetPipeIn(); PipeOut=((uMod_Event&)event).GetPipeOut();
-    Name=((uMod_Event&)event).GetName().c_str();
-    Client=((uMod_Event&)event).GetClient();
-    }
+  :  wxCommandEvent(event) { this->SetText( event.GetText()); PipeIn=((uMod_Event&)event).GetPipeIn(); PipeOut=((uMod_Event&)event).GetPipeOut(); Name=((uMod_Event&)event).GetName(); Client=((uMod_Event&)event).GetClient();}
 
   // Required for sending with wxPostEvent()
   wxEvent* Clone() const { return new uMod_Event(*this); }
@@ -52,21 +46,18 @@ public:
   wxString GetText() const { return m_Text; }
   void SetText( const wxString& text ) { m_Text = text; }
 
-  int GetValue(void) {return Value;}
   wxString GetName(void) {return Name;}
   HANDLE GetPipeIn(void) {return PipeIn;}
   HANDLE GetPipeOut(void) {return PipeOut;}
   uMod_Client * GetClient(void) {return Client;}
 
-  void SetValue(int value) {Value=value;}
-  void SetName( wxString name) {Name=name.c_str();}
+  void SetName( wxString name) {Name=name;}
   void SetPipeIn( HANDLE pipe) {PipeIn=pipe;}
   void SetPipeOut( HANDLE pipe) {PipeOut=pipe;}
   void SetClient( uMod_Client *client) {Client=client;}
 
 private:
 
-  int Value;
   wxString Name;
   HANDLE PipeIn;
   HANDLE PipeOut;

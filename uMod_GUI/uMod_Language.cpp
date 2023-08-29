@@ -20,7 +20,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include "uMod_Main.h"
 
-uMod_Language *Language = (uMod_Language*)0;
+uMod_Language *Language = NULL;
 
 uMod_Language::uMod_Language(void)
 {
@@ -179,8 +179,8 @@ int uMod_Language::LoadLanguage(const wxString &name)
     command.Replace( "\n", "");
     msg = entry.AfterFirst(':');
 
-    while (msg.Len()>0 && (msg[0]=='\r' || msg[0]=='\n')) msg.Remove(0,1);
-    while (msg.Len()>0 && (msg.Last()=='\n' || msg.Last()=='\r')) msg.RemoveLast(1);
+    while (msg[0]=='\r' || msg[0]=='\n') msg.Remove(0,1);
+    while (msg.Last()=='\n' || msg.Last()=='\r') msg.RemoveLast(1);
 
     CheckEntry( command, msg, MenuLanguage)
     CheckEntry( command, msg, MenuHelp)
@@ -198,54 +198,29 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, MenuExit)
     CheckEntry( command, msg, MainMenuMain)
     CheckEntry( command, msg, MainMenuHelp)
-    CheckEntry( command, msg, MenuOpenPackage)
-    CheckEntry( command, msg, MenuRemovePackage)
-    CheckEntry( command, msg, MenuRemoveSelectedPackages)
-    CheckEntry( command, msg, MenuUpdate)
-    CheckEntry( command, msg, MenuReload)
-    CheckEntry( command, msg, ButtonUpdate)
+    CheckEntry( command, msg, ButtonOpen)
     CheckEntry( command, msg, ButtonDirectory)
-    CheckEntry( command, msg, CollapseModSettings)
-    CheckEntry( command, msg, SupportTPF)
-    CheckEntry( command, msg, ComputeRenderTargets)
-    CheckEntry( command, msg, ExtractTexturesToDisk)
-    CheckEntry( command, msg, DeleteExtractedTexturesOnDisk)
-    CheckEntry( command, msg, ExtractPath)
+    CheckEntry( command, msg, ButtonUpdate)
+    CheckEntry( command, msg, ButtonReload)
     CheckEntry( command, msg, ChooseFile)
     CheckEntry( command, msg, ChooseDir)
-    CheckEntry( command, msg, MultipleSingleFiles)
-    CheckEntry( command, msg, HookInjection)
-    CheckEntry( command, msg, DirectInjection)
-    CheckEntry( command, msg, NoInjection)
-    CheckEntry( command, msg, InvalidGamePage)
     CheckEntry( command, msg, TextCtrlTemplate)
-    CheckEntry( command, msg, CollapseTextureCapture)
     CheckEntry( command, msg, CheckBoxSaveSingleTexture)
-    CheckEntry( command, msg, CheckBoxShowStringSaveSingleTexture)
-    CheckEntry( command, msg, CheckBoxShowSingleTexture)
     CheckEntry( command, msg, CheckBoxSaveAllTextures)
+    CheckEntry( command, msg, TextCtrlSavePath)
     CheckEntry( command, msg, SelectLanguage)
     CheckEntry( command, msg, StartGame)
     CheckEntry( command, msg, CommandLine)
-    CheckEntry( command, msg, ChooseTemplate)
-    CheckEntry( command, msg, OpenTemplate)
-    CheckEntry( command, msg, SaveTemplate)
-    CheckEntry( command, msg, SetTemplateName)
-    CheckEntry( command, msg, DefaultTemplate)
-    CheckEntry( command, msg, AutoSaveTemplate)
     CheckEntry( command, msg, ChooseGame)
     CheckEntry( command, msg, DeleteGame)
     CheckEntry( command, msg, GameAlreadyAdded)
     CheckEntry( command, msg, ExitGameAnyway)
-    CheckEntry( command, msg, Title)
+    CheckEntry( command, msg, NoComment)
     CheckEntry( command, msg, Author)
-    CheckEntry( command, msg, Comment)
-    CheckEntry( command, msg, SingleTextureNode)
     CheckEntry( command, msg, Error_GameIsHooked)
     CheckEntry( command, msg, Error_ProcessNotStarted)
     CheckEntry( command, msg, Error_RemoveHook)
     CheckEntry( command, msg, Error_FileNotSupported)
-    CheckEntry( command, msg, Error_FileIsEmpty)
     CheckEntry( command, msg, Error_FktNotFound)
     CheckEntry( command, msg, Error_D3DX9NotFound)
     CheckEntry( command, msg, Error_DLLNotFound)
@@ -261,19 +236,12 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, Error_Hash)
     CheckEntry( command, msg, Error_FileOpen)
     CheckEntry( command, msg, Error_FileRead)
-    CheckEntry( command, msg, Error_NoTemplates)
     CheckEntry( command, msg, Error_Memory)
     CheckEntry( command, msg, Error_Unzip)
     CheckEntry( command, msg, Error_ZipEntry)
-    CheckEntry( command, msg, CheckBoxUseSizeFilter)
-    CheckEntry( command, msg, CheckBoxUseFormatFilter)
-    CheckEntry( command, msg, SetFormatFilter)
     CheckEntry( command, msg, KeyBack)
     CheckEntry( command, msg, KeySave)
     CheckEntry( command, msg, KeyNext)
-    CheckEntry( command, msg, AskForKey)
-    CheckEntry( command, msg, KeyNotSet)
-    CheckEntry( command, msg, UnknownKey)
     CheckEntry( command, msg, FontColour)
     CheckEntry( command, msg, TextureColour)
     {}
@@ -290,8 +258,8 @@ int uMod_Language::LoadDefault(void)
   CurrentLanguage="English";
 
   MenuLanguage = "Change language";
-  MenuHelp = "Help";
-  MenuAbout = "About";
+  MenuHelp  = "Help";
+  MenuAbout  = "About";
   MenuAcknowledgement = "Acknowledgement";
 
   MenuStartGame = "Start game through uMod";
@@ -300,75 +268,45 @@ int uMod_Language::LoadDefault(void)
   MenuUseHook = "Use global hook";
   MenuAddGame = "Add game";
   MenuDeleteGame = "Delete game";
-  MenuLoadTemplate = "Load template ...";
+  MenuLoadTemplate = "Load template";
   MenuSaveTemplate = "Save template";
   MenuSaveTemplateAs = "Save template as ...";
-  MenuSetDefaultTemplate = "Set default template ...";
+  MenuSetDefaultTemplate = "Set template as default";
   MenuExit = "Exit";
 
   MainMenuMain = "Main";
   MainMenuHelp = "Help";
 
-  MenuOpenPackage = "Open texture/package";
-  MenuRemovePackage = "Remove package";
-  MenuRemoveSelectedPackages = "Remove selected packages";
-
-  MenuUpdate = "Update";
-  MenuReload = "Update (reload)";
-  ButtonUpdate = "Update";
+  ButtonOpen = "Open texture/package";
   ButtonDirectory = "Set save directory";
-
-  CollapseModSettings = "Settings";
-  SupportTPF = "Support TPF-Mods";
-  ComputeRenderTargets = "Compute hash also from rendering targets";
-  ExtractTexturesToDisk = "Extract texture to disk (recommended for huge mod packages)";
-  DeleteExtractedTexturesOnDisk = "Delete extracted textures if uMod is closed";
-  ExtractPath = "Extract directory";
+  ButtonUpdate = "Update";
+  ButtonReload = "Update (reload)";
 
   ChooseFile = "Choose a file";
   ChooseDir = "Choose a directory";
 
-  MultipleSingleFiles = "Multiple single files";
-
-  HookInjection = "Hook Injection: ";
-  DirectInjection = "Direct Injection: ";
-  NoInjection = "No Injection: ";
-  InvalidGamePage = "default page";
   TextCtrlTemplate = "Template: ";
-
-  CollapseTextureCapture = "Capture textures";
   CheckBoxSaveSingleTexture = "Save single texture";
-  CheckBoxShowStringSaveSingleTexture = "Show message in the upper left corner";
-  CheckBoxShowSingleTexture = "Show texture in the upper left corner";
   CheckBoxSaveAllTextures = "Save all textures";
+  TextCtrlSavePath = "Save path:";
 
   SelectLanguage = "Select a language.";
 
   StartGame = "Select the game to start.";
   CommandLine = "Set command line arguments.";
 
-  ChooseTemplate = "Chose a template";
-  OpenTemplate = "Open template";
-  SaveTemplate = "Save template";
-  SetTemplateName = "Set a template name";
-  DefaultTemplate = "Set default template";
-  AutoSaveTemplate = "auto save";
-
   ChooseGame = "Select a game binary.";
   DeleteGame = "Select the games to be deleted.";
   GameAlreadyAdded = "Game has been already added.";
   ExitGameAnyway = "Closing OpenTexMod while a game is running might lead to a crash of the game.\nExit anyway?";
-  Title = "Title";
-  Author = "Author";
-  Comment = "Comment";
-  SingleTextureNode = "Single Textures";
+  NoComment = "No comment.";
+  Author = "Author: ";
 
   Error_GameIsHooked = "The global hook is active and this game will be injected! Please delete the game from the list or disable the hook.";
   Error_ProcessNotStarted = "The game could not be started.";
   Error_RemoveHook = "Removing the Hook while a game is running might lead to crash.";
 
   Error_FileNotSupported = "This file type is not supported:\n";
-  Error_FileIsEmpty = "Could not retrieve textures from file:\n";
   Error_D3DX9NotFound = "The D3DX9_43.dll (32bit) is not available on your system.\nPlease install the newest DirectX End-User Runtime Installer.";
   Error_DLLNotFound = "Could not load the dll.\nThe dll injection won't work.\nThis might happen if D3DX9_43.dll (32bit) is not installed on your system.\nPlease install the newest DirectX End-User Runtime Web Installer.";
   Error_FktNotFound = "Could not load function out of dll.\nThe dll injection won't work.";
@@ -385,28 +323,18 @@ int uMod_Language::LoadDefault(void)
   Error_Hash = "Could not find hash, maybe file is not named as *_HASH.dds";
   Error_FileOpen = "Could not open file:";
   Error_FileRead = "Could not read file:";
-  Error_NoTemplates = "No templates available.";
   Error_Memory = "Could not allocate enough memory.";
   Error_Unzip = "Could not unzip.";
   Error_ZipEntry = "Could not find zip entry.";
 
-  CheckBoxUseSizeFilter = "Use size filter";
-  CheckBoxUseFormatFilter = "Use texture format filter";
-  SetFormatFilter = "Set the filter";
-  WidthSpin = "Width :";
-  HeightSpin = "Height :";
-  DepthSpin = "Depth :";
 
   KeyBack = "Back";
   KeySave = "Save";
   KeyNext = "Next";
 
-  AskForKey = "Pleas press a Key.";
-  KeyNotSet = "Not set";
-  UnknownKey = "Unknown";
 
-  FontColour = "Font colour";
-  TextureColour = "Texture colour";
+  FontColour = "Font colour (RGB):";
+  TextureColour = "Texture colour (RGB):";
   return 0;
 }
 
@@ -525,44 +453,44 @@ int uMod_Language::LoadKeys(void)
 // * VK_A - VK_Z are the same as ASCII 'A' - 'Z' (0x41 - 0x5A)
 */
   int count  = 0x30;
-  AddKey( "VK_0", count++);
-  AddKey( "VK_1", count++);
-  AddKey( "VK_2", count++);
-  AddKey( "VK_3", count++);
-  AddKey( "VK_4", count++);
-  AddKey( "VK_5", count++);
-  AddKey( "VK_6", count++);
-  AddKey( "VK_7", count++);
-  AddKey( "VK_8", count++);
-  AddKey( "VK_9", count++);
+  AddKey( "0", count++);
+  AddKey( "1", count++);
+  AddKey( "2", count++);
+  AddKey( "3", count++);
+  AddKey( "4", count++);
+  AddKey( "5", count++);
+  AddKey( "6", count++);
+  AddKey( "7", count++);
+  AddKey( "8", count++);
+  AddKey( "9", count++);
 
   count = 0x41;
-  AddKey( "VK_A", count++);
-  AddKey( "VK_B", count++);
-  AddKey( "VK_C", count++);
-  AddKey( "VK_D", count++);
-  AddKey( "VK_E", count++);
-  AddKey( "VK_F", count++);
-  AddKey( "VK_G", count++);
-  AddKey( "VK_H", count++);
-  AddKey( "VK_I", count++);
-  AddKey( "VK_J", count++);
-  AddKey( "VK_K", count++);
-  AddKey( "VK_L", count++);
-  AddKey( "VK_M", count++);
-  AddKey( "VK_N", count++);
-  AddKey( "VK_O", count++);
-  AddKey( "VK_P", count++);
-  AddKey( "VK_Q", count++);
-  AddKey( "VK_R", count++);
-  AddKey( "VK_S", count++);
-  AddKey( "VK_T", count++);
-  AddKey( "VK_U", count++);
-  AddKey( "VK_V", count++);
-  AddKey( "VK_W", count++);
-  AddKey( "VK_X", count++);
-  AddKey( "VK_Y", count++);
-  AddKey( "VK_Z", count++);
+  AddKey( "a", count++);
+  AddKey( "b", count++);
+  AddKey( "c", count++);
+  AddKey( "d", count++);
+  AddKey( "e", count++);
+  AddKey( "f", count++);
+  AddKey( "g", count++);
+  AddKey( "h", count++);
+  AddKey( "i", count++);
+  AddKey( "j", count++);
+  AddKey( "k", count++);
+  AddKey( "l", count++);
+  AddKey( "m", count++);
+  AddKey( "n", count++);
+  AddKey( "o", count++);
+  AddKey( "p", count++);
+  AddKey( "q", count++);
+  AddKey( "r", count++);
+  AddKey( "s", count++);
+  AddKey( "t", count++);
+  AddKey( "u", count++);
+  AddKey( "v", count++);
+  AddKey( "w", count++);
+  AddKey( "x", count++);
+  AddKey( "y", count++);
+  AddKey( "z", count++);
 
 /*
 

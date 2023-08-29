@@ -46,8 +46,7 @@ uMod_Client::~uMod_Client(void)
 void* uMod_Client::Entry(void)
 {
   char buffer[SMALL_BUFSIZE];
-  bool run = true;
-  while (run)
+  while (1)
   {
     unsigned long size;
     bool ret = ReadFile(
@@ -57,60 +56,37 @@ void* uMod_Client::Entry(void)
              &size, // number of bytes read
              NULL);        // not overlapped I/O
 
-    if (ret)// || GetLastError()==ERROR_MORE_DATA)
+    if (ret || GetLastError()==ERROR_MORE_DATA)
     {
       unsigned int pos=0;
       MsgStruct *commands;
-      //bool update_textures = false;
-
-      while (pos<=size-sizeof(MsgStruct))
+      bool update_textures = false;
+      while (pos<size-sizeof(MsgStruct))
       {
         commands = (MsgStruct*) &buffer[pos];
         //unsigned int add_length = 0;
-
+        /*
         switch (commands->Control)
         {
-        case CONTROL_ADD_CLIENT:
-        {
-          uMod_Event *event = new uMod_Event( uMod_EVENT_TYPE, ID_Add_Device);
-          event->SetValue(commands->Value);
-          event->SetClient(this);
-          wxQueueEvent( MainFrame, (wxEvent*) event);
-          //wxPostEvent( MainFrame, event);
-          break;
-        }
-        case CONTROL_REMOVE_CLIENT:
-        {
-          uMod_Event *event = new uMod_Event( uMod_EVENT_TYPE, ID_Delete_Device);
-          event->SetValue(commands->Value);
-          event->SetClient(this);
-          wxQueueEvent( MainFrame, (wxEvent*) event);
-          //wxPostEvent( MainFrame, event);
-          break;
-        }
-        case CONTROL_GAME_EXIT:
-        {
-          run = false;
-          pos=size;
-          break;
-        }
 
         }
-
+        */
         pos+=sizeof(MsgStruct);// + add_length;
       }
     }
-    else if (GetLastError()!=ERROR_MORE_DATA) run = false;
+    else
+    {
+      break;
+    }
   }
   CloseHandle(Pipe.In);
   Pipe.In = INVALID_HANDLE_VALUE;
   CloseHandle(Pipe.Out);
   Pipe.Out = INVALID_HANDLE_VALUE;
 
-  uMod_Event *event = new uMod_Event( uMod_EVENT_TYPE, ID_Delete_Game);
-  event->SetClient(this);
-  wxQueueEvent( MainFrame, (wxEvent*) event);
-  //wxPostEvent( MainFrame, event);
+  uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
+  event.SetClient(this);
+  wxPostEvent( MainFrame, event);
 
   return NULL;
 }

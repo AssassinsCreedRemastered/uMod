@@ -31,12 +31,12 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#include "..\uMod_DXMain\uMod_Defines.h"
+#include "uMod_Defines.h"
 
 
-class uMod_IDirect3DCubeTexture9 : public IDirect3DCubeTexture9
+
+interface uMod_IDirect3DCubeTexture9 : public IDirect3DCubeTexture9
 {
-public:
 	uMod_IDirect3DCubeTexture9(IDirect3DCubeTexture9 **ppTex, IDirect3DDevice9 *pIDirect3DDevice9)
 	{
 		m_D3Dtex = *ppTex; //Texture which will be displayed and will be passed to the game
@@ -46,20 +46,17 @@ public:
 		// original texture: stores the pointer to the fake texture object, is needed if original texture is deleted,
 		// thus the fake texture can also be deleted
 		Reference = -1; //need for fast deleting
-    CRC64 = 0u;
-    CRC32 = 0u;
+    Hash = 0u;
     FAKE = false;
-    Dirty = 1;
 	}
 
-	IDirect3DCubeTexture9 *m_D3Dtex; //!< pointer to the real IDirect3DCubeTexture9 object
-	uMod_IDirect3DCubeTexture9 *CrossRef_D3Dtex; //!< cross reference from the fake texture to the game texture and vice versa
-	IDirect3DDevice9 *m_D3Ddev; //!< pointer to the device
-	int Reference; //!< Index in the vector (needed for a fast delete).
-  DWORD64 CRC64; //!< computed hash value for this game texture.
-  DWORD32 CRC32; //!< computed crc32 value for this game texture.
-  bool FAKE; //!< True if this texture is was loaded by uMod (fake texture)
-  unsigned char  Dirty;
+	// callback interface
+	IDirect3DCubeTexture9 *m_D3Dtex;
+	uMod_IDirect3DCubeTexture9 *CrossRef_D3Dtex;
+	IDirect3DDevice9 *m_D3Ddev;
+	int Reference;
+	MyTypeHash Hash;
+  bool FAKE;
 
 	// original interface
     STDMETHOD(QueryInterface) (REFIID riid, void** ppvObj);
@@ -87,7 +84,43 @@ public:
     STDMETHOD(UnlockRect)(D3DCUBEMAP_FACES FaceType, UINT Level);
 
 
-    int ComputetHash( bool compute_crc);
+    int GetHash(MyTypeHash &hash);
 };
+
+
+
+inline void UnswitchTextures(uMod_IDirect3DCubeTexture9 *pTexture)
+{
+  uMod_IDirect3DCubeTexture9* CrossRef = pTexture->CrossRef_D3Dtex;
+  if (CrossRef!=NULL)
+  {
+    // switch textures back
+    IDirect3DCubeTexture9* cpy = pTexture->m_D3Dtex;
+    pTexture->m_D3Dtex = CrossRef->m_D3Dtex;
+    CrossRef->m_D3Dtex = cpy;
+
+    // cancel the link
+    CrossRef->CrossRef_D3Dtex = NULL;
+    pTexture->CrossRef_D3Dtex = NULL;
+  }
+}
+
+inline int SwitchTextures( uMod_IDirect3DCubeTexture9 *pTexture1, uMod_IDirect3DCubeTexture9 *pTexture2)
+{
+  if (pTexture1->m_D3Ddev == pTexture2->m_D3Ddev && pTexture1->CrossRef_D3Dtex == NULL && pTexture2->CrossRef_D3Dtex == NULL)
+  {
+    // make cross reference
+    pTexture1->CrossRef_D3Dtex = pTexture2;
+    pTexture2->CrossRef_D3Dtex = pTexture1;
+
+    // switch textures
+    IDirect3DCubeTexture9* cpy = pTexture2->m_D3Dtex;
+    pTexture2->m_D3Dtex = pTexture1->m_D3Dtex;
+    pTexture1->m_D3Dtex = cpy;
+    return (RETURN_OK);
+  }
+  else return (RETURN_TEXTURE_NOT_SWITCHED);
+}
+
 
 #endif

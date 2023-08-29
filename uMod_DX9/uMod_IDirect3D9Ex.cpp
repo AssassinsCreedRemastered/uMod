@@ -20,10 +20,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
-#include "../uMod_DXMain/uMod_Main.h"
-#include "uMod_IDirect3D9Ex.h"
-#include "uMod_IDirect3DDevice9.h"
-#include "uMod_IDirect3DDevice9Ex.h"
+#include "uMod_Main.h"
 
 
 
@@ -32,14 +29,12 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #define m_pIDirect3D9 m_pIDirect3D9Ex
 #define PRE_MESSAGE "uMod_IDirect3D9Ex"
 
-#define uMod_IDirect3D9_H_
-
 #include "uMod_IDirect3D9.cpp"
 
 
 HRESULT __stdcall uMod_IDirect3D9Ex::CreateDeviceEx( UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS *pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode, IDirect3DDevice9Ex **ppReturnedDeviceInterface)
 {
-  Message( "uMod_IDirect3D9Ex::CreateDeviceEx: %p\n", this);
+  Message( "uMod_IDirect3D9Ex::CreateDeviceEx: %lu\n", this);
   // we intercept this call and provide our own "fake" Device Object
   HRESULT hres = m_pIDirect3D9Ex->CreateDeviceEx( Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, pFullscreenDisplayMode, ppReturnedDeviceInterface);
 

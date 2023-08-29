@@ -18,9 +18,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
-#include "..\uMod_DXMain\uMod_Main.h"
-#include "uMod_IDirect3DDevice9Ex.h"
-#include "uMod_IDirect3DSurface9.h"
+#include "uMod_Main.h"
 
 #define uMod_IDirect3DDevice9 uMod_IDirect3DDevice9Ex
 #define IDirect3DDevice9 IDirect3DDevice9Ex
@@ -28,9 +26,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #define RETURN_QueryInterface 0x01000001L
 #define PRE_MESSAGE "uMod_IDirect3DDevice9Ex"
-#define DEF_DX_VERSION VERSION_DX9EX
 
-#define uMod_IDirect3DDevice9_H_
 
 #include "uMod_IDirect3DDevice9.cpp"
 
@@ -48,30 +44,7 @@ HRESULT __stdcall uMod_IDirect3DDevice9Ex::CheckResourceResidency( IDirect3DReso
 
 HRESULT __stdcall uMod_IDirect3DDevice9Ex::ComposeRects( IDirect3DSurface9 *pSource, IDirect3DSurface9 *pDestination, IDirect3DVertexBuffer9 *pSrcRectDescriptors, UINT NumRects, IDirect3DVertexBuffer9 *pDstRectDescriptors, D3DCOMPOSERECTSOP Operation, INT XOffset, INT YOffset)
 {
-  Message( PRE_MESSAGE "::ComposeRects( %p, %p, %p, %u, %p, ...): %p\n", pSource, pDestination, pSrcRectDescriptors, NumRects, this);
-  IDirect3DSurface9* cpy;
-  uMod_IDirect3DSurface9 *DestSurf=NULL;
-  if( pSource != NULL )
-  {
-    long int ret = pSource->QueryInterface( IID_IDirect3D9, (void**) &cpy);
-    if (ret == 0x01000000L)
-    {
-      pSource = ((uMod_IDirect3DSurface9*)pSource)->m_D3Dsurf;
-    }
-  }
-  if( pDestination != NULL )
-  {
-    long int ret = pDestination->QueryInterface( IID_IDirect3D9, (void**) &cpy);
-    if (ret == 0x01000000L)
-    {
-      DestSurf = ((uMod_IDirect3DSurface9*)pDestination);
-      pDestination = DestSurf->m_D3Dsurf;
-    }
-  }
-  HRESULT ret = (m_pIDirect3DDevice9Ex->ComposeRects( pSource, pDestination, pSrcRectDescriptors, NumRects, pDstRectDescriptors, Operation, XOffset, YOffset));
-
-  CheckForChangeSurface(DestSurf);
-  return (ret);
+  return(m_pIDirect3DDevice9Ex->ComposeRects( pSource, pDestination, pSrcRectDescriptors, NumRects, pDstRectDescriptors, Operation, XOffset, YOffset));
 }
 
 HRESULT __stdcall uMod_IDirect3DDevice9Ex::CreateDepthStencilSurfaceEx( UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9 **ppSurface, HANDLE *pSharedHandle, DWORD Usage)

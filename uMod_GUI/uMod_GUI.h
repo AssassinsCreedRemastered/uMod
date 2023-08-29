@@ -31,41 +31,18 @@ public:
   ~uMod_Frame(void);
 
 
-  /**
-   * A game has started and opend a pipe to the GUI. The Server thus create an event and send it to the main frame.
-   * @param event
-   */
+
   void OnAddGame( wxCommandEvent &event);
-  /**
-   * A game has quite and closed it pipe to the GUI. The Server thus create an event and send it to the main frame.
-   * @param event
-   */
   void OnDeleteGame( wxCommandEvent &event);
 
-  /**
-   * A game has created a DX device. The Server thus create an event and send it to the main frame.
-   * @param event
-   */
-  void OnAddDevice( wxCommandEvent &event);
-  /**
-   * A game has deleted a DX device. The Server thus create an event and send it to the main frame.
-   * @param event
-   */
-  void OnRemoveDevice( wxCommandEvent &event);
-
-
-  /**
-   * The user tries to close the GUI.
-   * @param WXUNUSED
-   */
   void OnClose(wxCloseEvent& WXUNUSED(event));
 
-/*
+
   void OnButtonOpen(wxCommandEvent& WXUNUSED(event));
   void OnButtonPath(wxCommandEvent& WXUNUSED(event));
   void OnButtonUpdate(wxCommandEvent& WXUNUSED(event));
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
-*/
+
   void OnMenuStartGame( wxCommandEvent &event);
 
   void OnMenuUseHook( wxCommandEvent &event);
@@ -74,6 +51,7 @@ public:
 
   void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
+  void OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event));
   void OnMenuSetDefaultTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuLanguage(wxCommandEvent& WXUNUSED(event));
 
@@ -84,8 +62,6 @@ public:
   void OnMenuAcknowledgement(wxCommandEvent& WXUNUSED(event));
 
 private:
-
-  int ChooseTemplate( const wxString &message, wxString &file);
 
   int ActivateGamesControl(void);
   int DeactivateGamesControl(void);
@@ -98,25 +74,23 @@ private:
   int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
 
-
-
   uMod_Server *Server;
 
   wxNotebook *Notebook;
 
-/*
+
   wxButton *OpenButton;
   wxButton *DirectoryButton;
   wxButton *UpdateButton;
   wxButton *ReloadButton;
-*/
+
 
   wxMenuBar *MenuBar;
   wxMenu *MenuMain;
   wxMenu *MenuHelp;
 
   wxBoxSizer *MainSizer;
-  //wxBoxSizer *ButtonSizer;
+  wxBoxSizer *ButtonSizer;
 
 
   int NumberOfGames;

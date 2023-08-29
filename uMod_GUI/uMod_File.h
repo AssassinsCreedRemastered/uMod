@@ -28,29 +28,14 @@ public:
   uMod_File(const wxString &file);
   ~uMod_File(void);
 
-  bool FileSupported(void) const;
-  bool FileSupported( const wxString &suffix) const;
-  bool PackageFile(void) const;
-  bool PackageFile( const wxString &suffix) const;
-  bool SingleFile(void) const;
-  bool SingleFile( const wxString &suffix) const;
-  //int AddSingleFileToNode( uMod_TreeViewNode* node);
-  int GetContentTemplate(const wxString &content, uMod_TreeViewNode* node);
+  bool FileSupported(void);
 
-  /*
   int GetComment( wxString &tool_tip);
   int GetContent( AddTextureClass &tex, bool add);
-*/
-  int GetContent( uMod_TreeViewNode* node);
 
   int SetFile(const wxString &file) {FileName=file;Loaded=false; return 0;}
-  const wxString& GetFile(void) const {return FileName;}
+  wxString GetFile(void) {return FileName;}
 
-  int SetExtractPath(const wxString &path) {ExtractPath=path; if (path.Len()>0) myExtractArchivesToDisk=true; else myExtractArchivesToDisk=false; return 0;}
-  const wxString& GetExtractPath(void) const {return ExtractPath;}
-
-  const bool &ExtractArchivesToDisk(void) const {return myExtractArchivesToDisk;}
-  bool &ExtractArchivesToDisk(void) {return myExtractArchivesToDisk;}
 
   wxString LastError;
 
@@ -58,25 +43,14 @@ private:
   int ReadFile(void);
 
   int UnXOR(void);
-  /*
   int GetCommentZip( wxString &tool_tip);
   int GetCommentTpf( wxString &tool_tip);
-*/
-  int AddFile( uMod_TreeViewNode* node);
-  int AddZip( uMod_TreeViewNode* node);
-  int AddTpf( uMod_TreeViewNode* node);
 
-  int AddContent( const char* pw, uMod_TreeViewNode* node);
-
-  int GetContentTemplate_ZIP( const uMod_TreeViewNode_ArrayPtr &list_node, uMod_TreeViewNode* node);
-  int GetContentTemplate_SF( const uMod_TreeViewNode_ArrayPtr &list_node, uMod_TreeViewNode* node);
-
-  int WriteContentToDisk( wxString& file , char* data, int len);
+  int AddFile( AddTextureClass &tex, bool add);
+  int AddZip( AddTextureClass &tex, bool add, bool tpf);
+  int AddContent( const char* pw, AddTextureClass &tex, bool add);
 
   wxString FileName;
-  wxString ExtractPath;
-  bool myExtractArchivesToDisk;
-
   bool Loaded;
   bool XORed;
   char *FileInMemory;

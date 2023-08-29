@@ -20,9 +20,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
-#include "..\uMod_DXMain\uMod_Main.h"
-#include "uMod_IDirect3D9.h"
-#include "uMod_IDirect3DDevice9.h"
+#include "uMod_Main.h"
 
 #ifndef PRE_MESSAGE
 #define PRE_MESSAGE "uMod_IDirect3D9"
@@ -30,14 +28,14 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 uMod_IDirect3D9::uMod_IDirect3D9( IDirect3D9 *pOriginal, uMod_TextureServer* server)
 {
-  Message( PRE_MESSAGE "::" PRE_MESSAGE "( %p, %p): %p\n", pOriginal, server, this);
+  Message( PRE_MESSAGE "::" PRE_MESSAGE "( %lu, %lu): %lu\n", pOriginal, server, this);
   m_pIDirect3D9 = pOriginal;
   uMod_Server = server;
 }
 
 uMod_IDirect3D9::~uMod_IDirect3D9(void)
 {
-  Message( PRE_MESSAGE "::~" PRE_MESSAGE "(): %p\n", this);
+  Message( PRE_MESSAGE "::~" PRE_MESSAGE "(): %lu\n", this);
 }
 
 HRESULT  __stdcall uMod_IDirect3D9::QueryInterface(REFIID riid, void** ppvObj)
@@ -143,7 +141,7 @@ HMONITOR __stdcall uMod_IDirect3D9::GetAdapterMonitor(UINT Adapter)
 
 HRESULT __stdcall uMod_IDirect3D9::CreateDevice(UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
 {
-  Message( PRE_MESSAGE "::CreateDevice(): %p\n", this);
+  Message( PRE_MESSAGE "::CreateDevice(): %lu\n", this);
 	// we intercept this call and provide our own "fake" Device Object
 	HRESULT hres = m_pIDirect3D9->CreateDevice( Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 

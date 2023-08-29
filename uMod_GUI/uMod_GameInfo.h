@@ -20,8 +20,6 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #ifndef uMod_GAME_H_
 #define uMod_GAME_H_
-
-#include "uMod_TreeView.h"
 #include "uMod_Main.h"
 
 //this class is intended as a storing object for each game
@@ -34,35 +32,11 @@ public:
   void Init(void);
 
 
-  int SaveToString( wxString &content);
-  int LoadFromString( const wxString &content);
+  int SaveToFile( const wxString &file_name);
+  int LoadFromFile( const wxString &file_name);
 
-  //int GetActiveTexture( uMod_TextureElement_SortedArrayPtr &texture);
-
-
-
-  bool &ShowCollCapturePane(void) {return myShowCollCapturePane;}
-  const bool &ShowCollCapturePane(void) const {return myShowCollCapturePane;}
-
-  bool &ShowCollSettingsPane(void) {return myShowCollSettingsPane;}
-  const bool &ShowCollSettingsPane(void) const {return myShowCollSettingsPane;}
-
-
-  bool &SupportTPF(void) {return mySupportTPF;}
-  const bool &SupportTPF(void) const {return mySupportTPF;}
-
-  bool &ComputeRenderTargets(void) {return myComputeRenderTargets;}
-  const bool &ComputeRenderTargets(void) const {return myComputeRenderTargets;}
-
-  bool &ExtractTexturesToDisk(void) {return myExtractTexturesToDisk;}
-  const bool &ExtractTexturesToDisk(void) const {return myExtractTexturesToDisk;}
-
-  bool &DeleteExtractedTexturesOnDisk(void) {return myDeleteExtractedTexturesOnDisk;}
-  const bool &DeleteExtractedTexturesOnDisk(void) const {return myDeleteExtractedTexturesOnDisk;}
-
-  int SetExtractPath(const wxString &path) {ExtractPath=path; return 0;}
-  const wxString& GetExtractPath(void) const {return ExtractPath;}
-
+  int GetChecked( bool* array, int num) const;
+  int SetChecked( bool* array, int num);
 
   int SetSaveSingleTexture(bool val);
   bool GetSaveSingleTexture(void) const {return SaveSingleTexture;}
@@ -70,6 +44,13 @@ public:
   int SetSaveAllTextures(bool val);
   bool GetSaveAllTextures(void) const {return SaveAllTextures;}
 
+  void SetFiles(const wxArrayString &files);
+  void GetFiles( wxArrayString &files) const;
+  //void AddTexture( const wxString &textures);
+
+  int GetNumberOfFiles(void) const {return Files.GetCount();}
+
+  int SendTextures(void);
 
   int GetKeyBack() const {return KeyBack;}
   int SetKeyBack(int key) {KeyBack=key; return 0;}
@@ -80,88 +61,37 @@ public:
   int GetKeyNext() const {return KeyNext;}
   int SetKeyNext(int key) {KeyNext=key; return 0;}
 
-  bool &ShowSingleTextureString() {return myShowSingleTextureString;}
-  const bool &ShowSingleTextureString() const {return myShowSingleTextureString;}
+  int SetFontColour(const int *colour) {FontColour[0]=colour[0];FontColour[1]=colour[1];FontColour[2]=colour[2];return 0;}
+  int GetFontColour(int *colour) const {colour[0]=FontColour[0];colour[1]=FontColour[1];colour[2]=FontColour[2];return 0;}
 
-  bool &ShowSingleTexture() {return myShowSingleTexture;}
-  const bool &ShowSingleTexture() const {return myShowSingleTexture;}
-
-  int SetFontColour(const unsigned char *colour) {FontColour[0]=colour[0];FontColour[1]=colour[1];FontColour[2]=colour[2];FontColour[3]=colour[3];return 0;}
-  int GetFontColour(unsigned char *colour) const {colour[0]=FontColour[0];colour[1]=FontColour[1];colour[2]=FontColour[2];colour[3]=FontColour[3];return 0;}
-
-  int SetTextureColour(const unsigned char *colour) {TextureColour[0]=colour[0];TextureColour[1]=colour[1];TextureColour[2]=colour[2];TextureColour[3]=colour[3];return 0;}
-  int GetTextureColour(unsigned char *colour) const {colour[0]=TextureColour[0];colour[1]=TextureColour[1];colour[2]=TextureColour[2];colour[3]=TextureColour[3];return 0;}
-
-
-  bool &UseSizeFilter(void) {return myUseSizeFilter;}
-  const bool &UseSizeFilter(void) const {return myUseSizeFilter;}
-
-  int &HeightMin(void) {return myHeightMin;}
-  const int &HeightMin(void) const {return myHeightMin;}
-  int &HeightMax(void) {return myHeightMax;}
-  const int &HeightMax(void) const {return myHeightMax;}
-
-  int &WidthMin(void) {return myWidthMin;}
-  const int &WidthMin(void) const {return myWidthMin;}
-  int &WidthMax(void) {return myWidthMax;}
-  const int &WidthMax(void) const {return myWidthMax;}
-
-  int &DepthMin(void) {return myDepthMin;}
-  const int &DepthMin(void) const {return myDepthMin;}
-  int &DepthMax(void) {return myDepthMax;}
-  const int &DepthMax(void) const {return myDepthMax;}
-
-  bool &UseFormatFilter(void) {return myUseFormatFilter;}
-  const bool &UseFormatFilter(void) const {return myUseFormatFilter;}
-
-  unsigned long &FormatFilter(void) {return myFormatFilter;}
-  const unsigned long &FormatFilter(void) const {return myFormatFilter;}
-
-  unsigned long &FileFormat(void) {return myFileFormat;}
-  const unsigned long &FileFormat(void) const {return myFileFormat;}
-
+  int SetTextureColour(const int *colour) {TextureColour[0]=colour[0];TextureColour[1]=colour[1];TextureColour[2]=colour[2];return 0;}
+  int GetTextureColour(int *colour) const {colour[0]=TextureColour[0];colour[1]=TextureColour[1];colour[2]=TextureColour[2];return 0;}
 
   int SetOpenPath(const wxString &path) {OpenPath=path; return 0;}
-  const wxString& GetOpenPath(void) const {return OpenPath;}
+  wxString GetOpenPath(void) const {return OpenPath;}
 
   int SetSavePath(const wxString &path) {SavePath=path; return 0;}
-  const wxString& GetSavePath(void) const {return SavePath;}
+  wxString GetSavePath(void) const {return SavePath;}
 
   uMod_GameInfo& operator = (const  uMod_GameInfo &rhs);
 
 private:
-  bool myShowCollCapturePane;
-  bool myShowCollSettingsPane;
 
-  bool mySupportTPF;
-  bool myComputeRenderTargets;
-  bool myExtractTexturesToDisk;
-  bool myDeleteExtractedTexturesOnDisk;
-  wxString ExtractPath;
+  bool *Checked;
+  int NumberOfChecked;
+  int LengthOfChecked;
 
   bool SaveSingleTexture;
   bool SaveAllTextures;
+
+  wxArrayString Files;
 
   int KeyBack;
   int KeySave;
   int KeyNext;
 
-  bool myUseSizeFilter;
-  int myHeightMin;
-  int myHeightMax;
-  int myWidthMin;
-  int myWidthMax;
-  int myDepthMin;
-  int myDepthMax;
-
-  bool myUseFormatFilter;
-  unsigned long myFormatFilter;
-  unsigned long myFileFormat;
-
-  bool myShowSingleTextureString;
-  bool myShowSingleTexture;
-  unsigned char FontColour[4];
-  unsigned char TextureColour[4];
+  int FontColour[3];
+  int TextureColour[3];
 
   wxString OpenPath;
   wxString SavePath;

@@ -51,65 +51,36 @@ public:
   wxString MainMenuMain;
   wxString MainMenuHelp;
 
-  wxString MenuOpenPackage;
-  wxString MenuRemovePackage;
-  wxString MenuRemoveSelectedPackages;
-  wxString MenuUpdate;
-  wxString MenuReload;
-  wxString ButtonUpdate;
+  wxString ButtonOpen;
   wxString ButtonDirectory;
-
-  wxString CollapseModSettings;
-  wxString SupportTPF;
-  wxString ComputeRenderTargets;
-  wxString ExtractTexturesToDisk;
-  wxString DeleteExtractedTexturesOnDisk;
-  wxString ExtractPath;
+  wxString ButtonUpdate;
+  wxString ButtonReload;
 
   wxString ChooseFile;
   wxString ChooseDir;
 
-  wxString MultipleSingleFiles;
-
-  wxString HookInjection;
-  wxString DirectInjection;
-  wxString NoInjection;
-  wxString InvalidGamePage;
   wxString TextCtrlTemplate;
-
-  wxString CollapseTextureCapture;
   wxString CheckBoxSaveSingleTexture;
-  wxString CheckBoxShowStringSaveSingleTexture;
-  wxString CheckBoxShowSingleTexture;
   wxString CheckBoxSaveAllTextures;
+  wxString TextCtrlSavePath;
 
   wxString SelectLanguage;
 
   wxString StartGame;
   wxString CommandLine;
 
-  wxString ChooseTemplate;
-  wxString OpenTemplate;
-  wxString SaveTemplate;
-  wxString SetTemplateName;
-  wxString DefaultTemplate;
-  wxString AutoSaveTemplate;
-
   wxString ChooseGame;
   wxString DeleteGame;
   wxString GameAlreadyAdded;
   wxString ExitGameAnyway;
-  wxString Title;
+  wxString NoComment;
   wxString Author;
-  wxString Comment;
-  wxString SingleTextureNode;
 
   wxString Error_GameIsHooked;
   wxString Error_ProcessNotStarted;
   wxString Error_RemoveHook;
 
   wxString Error_FileNotSupported;
-  wxString Error_FileIsEmpty;
   wxString Error_FktNotFound;
   wxString Error_D3DX9NotFound;
   wxString Error_DLLNotFound;
@@ -126,25 +97,13 @@ public:
   wxString Error_Hash;
   wxString Error_FileOpen;
   wxString Error_FileRead;
-  wxString Error_NoTemplates;
   wxString Error_Memory;
   wxString Error_Unzip;
   wxString Error_ZipEntry;
 
-  wxString CheckBoxUseSizeFilter;
-  wxString CheckBoxUseFormatFilter;
-  wxString SetFormatFilter;
-  wxString WidthSpin;
-  wxString HeightSpin;
-  wxString DepthSpin;
-
   wxString KeyBack;
   wxString KeySave;
   wxString KeyNext;
-  wxString AskForKey;
-  wxString KeyNotSet;
-  wxString UnknownKey;
-
   wxArrayString KeyStrings;
   wxArrayInt KeyValues;
 

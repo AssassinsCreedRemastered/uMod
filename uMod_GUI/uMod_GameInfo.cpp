@@ -24,364 +24,262 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 uMod_GameInfo::uMod_GameInfo(void)
 {
+  Checked = NULL;
+  NumberOfChecked = 0;
+  LengthOfChecked = 0;
   Init();
 }
 
 
 uMod_GameInfo::~uMod_GameInfo(void)
 {
+  if (Checked!=NULL) delete [] Checked;
 }
 
 void uMod_GameInfo::Init(void)
 {
-  myShowCollCapturePane = false;
-
   SaveSingleTexture = false;
   SaveAllTextures = false;
-  myShowSingleTextureString = false;
-  myShowSingleTexture = false;
 
   KeyBack = -1;
   KeySave = -1;
   KeyNext = -1;
-  FontColour[0]=255;FontColour[1]=0;FontColour[2]=0;FontColour[3]=255;
-  TextureColour[0]=0;TextureColour[1]=255;TextureColour[2]=0;TextureColour[3]=255;
-
-  myUseSizeFilter = false;
-  myHeightMin = 1;
-  myHeightMax = 1;
-  myWidthMin = 1;
-  myWidthMax = 1;
-  myDepthMin = 1;
-  myDepthMax = 1;
-
-  myUseFormatFilter = false;
-  myFormatFilter = 0u;
-  myFileFormat = uMod_D3DXIFF_DDS;
-
-  SavePath = wxGetCwd();
-  SavePath << "\\textures";
-
+  FontColour[0]=255;FontColour[1]=0;FontColour[2]=0;
+  TextureColour[0]=0;TextureColour[1]=255;TextureColour[2]=0;
+  NumberOfChecked = 0;
+  SavePath.Empty();
   OpenPath.Empty();
-
-
-  myShowCollSettingsPane = false;
-  mySupportTPF = false;
-  myComputeRenderTargets = false;
-  myExtractTexturesToDisk = true;
-  myDeleteExtractedTexturesOnDisk = false;
-
-  ExtractPath = wxGetCwd();
-  ExtractPath << "\\ExtractedMods";
+  Files.Empty();
 }
 
-int uMod_GameInfo::SaveToString( wxString &content )
+int uMod_GameInfo::SaveToFile( const wxString &file_name)
 {
-  content.Empty();
+  wxFile file;
 
-  wxString temp;
+  //if (!file.Access(name, wxFile::write)) return -1;
+  file.Open(file_name, wxFile::write);
+  if (!file.IsOpened())  {return -1;}
 
-  temp.Printf( "ShowCollCapturePane:%d\n", myShowCollCapturePane);
-  content << temp;
-
+  wxString content;
   if (SavePath.Len()>0)
   {
-    temp.Printf( "SavePath:%ls\n", SavePath.wc_str());
-    content << temp;
+    content.Printf( L"SavePath:%ls\n", SavePath.wc_str());
+    file.Write( content.char_str(), content.Len());
   }
 
   if (OpenPath.Len()>0)
   {
-    temp.Printf( "OpenPath:%ls\n", OpenPath.wc_str());
-    content << temp;
+    content.Printf( L"OpenPath:%ls\n", OpenPath.wc_str());
+    file.Write( content.char_str(), content.Len());
   }
 
-  temp.Printf( "SaveAllTextures:%d\nSaveSingleTexture:%d\n", SaveAllTextures, SaveSingleTexture);
-  content << temp;
-
-  temp.Printf( "ShowSingleTextureString:%d\n", myShowSingleTextureString);
-  content << temp;
-
-  temp.Printf( "ShowSingleTexture:%d\n", myShowSingleTexture);
-  content << temp;
+  content.Printf( L"SaveAllTextures:%d\nSaveSingleTexture:%d\n", SaveAllTextures, SaveSingleTexture);
+  file.Write( content.char_str(), content.Len());
 
   if (KeyBack>=0)
   {
-    temp.Printf( "KeyBack:%d\n", KeyBack);
-    content << temp;
+    content.Printf( L"KeyBack:%d\n", KeyBack);
+    file.Write( content.char_str(), content.Len());
   }
   if (KeySave>=0)
   {
-    temp.Printf( "KeySave:%d\n", KeySave);
-    content << temp;
+    content.Printf( L"KeySave:%d\n", KeySave);
+    file.Write( content.char_str(), content.Len());
   }
   if (KeyNext>=0)
   {
-    temp.Printf( "KeyNext:%d\n", KeyNext);
-    content << temp;
+    content.Printf( L"KeyNext:%d\n", KeyNext);
+    file.Write( content.char_str(), content.Len());
   }
-  temp.Printf("UseSizeFilter:%d\n", myUseSizeFilter);
-  content << temp;
-  temp.Printf( "Height:%d,%d\n", myHeightMin, myHeightMax);
-  content << temp;
-  temp.Printf( "Width:%d,%d\n", myWidthMin, myWidthMax);
-  content << temp;
-  temp.Printf( "Depth:%d,%d\n", myDepthMin, myDepthMax);
-  content << temp;
 
+  content.Printf( L"FontColour:%d,%d,%d\n", FontColour[0], FontColour[1], FontColour[2]);
+  file.Write( content.char_str(), content.Len());
+  content.Printf( L"TextureColour:%d,%d,%d\n", TextureColour[0], TextureColour[1], TextureColour[2]);
+  file.Write( content.char_str(), content.Len());
 
-  temp.Printf("UseFormatFilter:%d\n", myUseFormatFilter);
-  content << temp;
-  if (myFormatFilter>0u)
+  int num = Files.GetCount();
+
+  for (int i=0; i<num; i++)
   {
-    temp.Printf( "FormatFilter:%lu\n", myFormatFilter);
-    content << temp;
-  }
-  if (myFileFormat>0u)
-  {
-    temp.Printf( "FileFormat:%lu\n", myFileFormat);
-    content << temp;
-  }
-
-  temp.Printf( L"FontColour:%u,%u,%u,%u\n", FontColour[0], FontColour[1], FontColour[2],FontColour[3]);
-  content << temp;
-  temp.Printf( L"TextureColour:%u,%u,%u,%u\n", TextureColour[0], TextureColour[1], TextureColour[2], TextureColour[3]);
-  content << temp;
-
-
-
-  temp.Printf( "ShowCollSettingsPane:%d\n", myShowCollSettingsPane);
-  content << temp;
-
-  temp.Printf( "SupportTPF:%d\n", mySupportTPF);
-  content << temp;
-
-  temp.Printf( "ComputeRenderTargets:%d\n", myComputeRenderTargets);
-  content << temp;
-
-  temp.Printf( "ExtractTexturesToDisk:%d\n", myExtractTexturesToDisk);
-  content << temp;
-
-  temp.Printf( "DeleteExtractedTexturesOnDisk:%d\n", myDeleteExtractedTexturesOnDisk);
-  content << temp;
-
-  if (ExtractPath.Len()>0)
-  {
-    temp.Printf( "ExtractPath:%ls\n", ExtractPath.wc_str());
-    content << temp;
+    if (i<NumberOfChecked)
+    {
+      if (Checked[i]) content.Printf( L"Add_true:%ls\n", Files[i].wc_str());
+      else content.Printf( L"Add_false:%ls\n", Files[i].wc_str());
+    }
+    else content.Printf( L"Add_true:%ls\n", Files[i].wc_str());
+    file.Write( content.char_str(), content.Len());
   }
 
-
-
+  file.Close();
   return 0;
 }
 
 
-int uMod_GameInfo::LoadFromString( const wxString &content)
+int uMod_GameInfo::LoadFromFile( const wxString &file_name)
 {
   Init();
+  if (file_name.Len()==0) return -1;
+
+  wxFile file;
+  if (!file.Access(file_name, wxFile::read)) return -1;
+  file.Open(file_name, wxFile::read);
+  if (!file.IsOpened())  {return -1;}
+
+  unsigned len = file.Length();
+
+  unsigned char* buffer;
+  try {buffer = new unsigned char [len+1];}
+  catch (...) {return -1;}
+
+  unsigned int result = file.Read( buffer, len);
+  file.Close();
+
+  if (result != len) {delete [] buffer; return -1;}
+
+  buffer[len]=0;
+
+  wxString content;
+  content =  buffer;
+  delete [] buffer;
 
   wxStringTokenizer token( content, "\n");
 
   int num = token.CountTokens();
 
+  if (LengthOfChecked<num)
+  {
+    if (Checked!=NULL) delete [] Checked;
+    try {Checked = new bool [num+100];}
+    catch (...) {Checked=NULL;LengthOfChecked=0; return -1;}
+    LengthOfChecked = num+100;
+  }
 
   wxString line;
   wxString command;
   wxString temp;
-  //Files.Alloc(num);
+  Files.Alloc(num);
   for (int i=0; i<num; i++)
   {
     line = token.GetNextToken();
     command = line.BeforeFirst(':');
 
-    if (command == "ShowCollCapturePane")
+
+    if (command == L"Add_true")
     {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myShowCollCapturePane = false;
-      else myShowCollCapturePane = true;
+      Checked[NumberOfChecked++] = true;
+      Files.Add(line.AfterFirst(':'));
     }
-    else if (command == "SavePath") SavePath = line.AfterFirst(':');
-    else if (command == "OpenPath") OpenPath = line.AfterFirst(':');
-    else if (command == "SaveAllTextures")
+    else if (command == L"Add_false")
+    {
+      Checked[NumberOfChecked++] = false;
+      Files.Add(line.AfterFirst(':'));
+    }
+    else if (command == L"SavePath") SavePath = line.AfterFirst(':');
+    else if (command == L"OpenPath") OpenPath = line.AfterFirst(':');
+    else if (command == L"SaveAllTextures")
     {
       temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') SaveAllTextures = false;
+      if (temp[0]=='0') SaveAllTextures = false;
       else SaveAllTextures = true;
     }
-    else if (command == "SaveSingleTexture")
+    else if (command == L"SaveSingleTexture")
     {
       temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') SaveSingleTexture = false;
+      if (temp[0]=='0') SaveSingleTexture = false;
       else SaveSingleTexture = true;
     }
-    else if (command == "ShowSingleTextureString")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myShowSingleTextureString = false;
-      else myShowSingleTextureString = true;
-    }
-    else if (command == "ShowSingleTexture")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myShowSingleTexture = false;
-      else myShowSingleTexture = true;
-    }
-    else if  (command == "KeyBack")
+    else if  (command == L"KeyBack")
     {
       temp = line.AfterFirst(':');
       long key;
       if (temp.ToLong( &key)) KeyBack = key;
       else KeyBack = -1;
     }
-    else if  (command == "KeySave")
+    else if  (command == L"KeySave")
     {
       temp = line.AfterFirst(':');
       long key;
       if (temp.ToLong( &key)) KeySave = key;
       else KeySave = -1;
     }
-    else if  (command == "KeyNext")
+    else if  (command == L"KeyNext")
     {
       temp = line.AfterFirst(':');
       long key;
       if (temp.ToLong( &key)) KeyNext = key;
       else KeyNext = -1;
     }
-    else if (command == "UseSizeFilter")
+    else if  (command == L"FontColour")
     {
       temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myUseSizeFilter = false;
-      else myUseSizeFilter = true;
+      temp = temp.BeforeFirst(',');
+      long colour;
+      if (temp.ToLong( &colour)) FontColour[0] = colour;
+      else FontColour[0] = 255;
+      temp = line.AfterFirst(':');
+      temp = temp.AfterFirst(',');
+      temp = temp.BeforeFirst(',');
+      if (temp.ToLong( &colour)) FontColour[1] = colour;
+      else FontColour[1] = 0;
+      temp = line.AfterFirst(':');
+      temp = temp.AfterLast(',');
+      if (temp.ToLong( &colour)) FontColour[2] = colour;
+      else FontColour[2] = 0;
     }
-    else if  (command == "Height")
-    {
-      line = line.AfterFirst(':');
-      temp = line.Before(',');
-      long val;
-      if (temp.ToLong( &val)) myHeightMin = val;
-      else myHeightMin = 1;
-      temp = line.After(',');
-      if (temp.ToLong( &val)) myHeightMax = val;
-      else myHeightMax = 1;
-    }
-    else if  (command == "Width")
-    {
-      line = line.AfterFirst(':');
-      temp = line.Before(',');
-      long val;
-      if (temp.ToLong( &val)) myWidthMin = val;
-      else myWidthMin = 1;
-      temp = line.After(',');
-      if (temp.ToLong( &val)) myWidthMax = val;
-      else myWidthMax = 1;
-    }
-    else if  (command == "Depth")
-    {
-      line = line.AfterFirst(':');
-      temp = line.Before(',');
-      long val;
-      if (temp.ToLong( &val)) myDepthMin = val;
-      else myDepthMin = 1;
-      temp = line.After(',');
-      if (temp.ToLong( &val)) myDepthMax = val;
-      else myDepthMax = 1;
-    }
-    else if (command == "UseFormatFilter")
+    else if  (command == L"TextureColour")
     {
       temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myUseFormatFilter = false;
-      else myUseFormatFilter = true;
-    }
-    else if  (command == "FormatFilter")
-    {
+      temp = temp.BeforeFirst(',');
+      long colour;
+      if (temp.ToLong( &colour)) TextureColour[0] = colour;
+      else TextureColour[0] = 0;
       temp = line.AfterFirst(':');
-      unsigned long val;
-      if (temp.ToULong( &val)) myFormatFilter = val;
-      else myFormatFilter = 0u;
-    }
-    else if  (command == "FileFormat")
-    {
+      temp = temp.AfterFirst(',');
+      temp = temp.BeforeFirst(',');
+      if (temp.ToLong( &colour)) TextureColour[1] = colour;
+      else TextureColour[1] = 255;
       temp = line.AfterFirst(':');
-      unsigned long val;
-      if (temp.ToULong( &val)) myFileFormat = val;
-      else myFileFormat = 0u;
+      temp = temp.AfterLast(',');
+      if (temp.ToLong( &colour)) TextureColour[2] = colour;
+      else TextureColour[2] = 0;
     }
-    else if (command == "ShowSingleTextureString")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myShowSingleTextureString = false;
-      else myShowSingleTextureString = true;
-    }
-    else if  (command == "FontColour")
-    {
-      temp = line.AfterFirst(':');
 
-      wxStringTokenizer col( temp, ",");
-
-      int num_col = col.CountTokens();
-      for (int i=0; i<num_col && i<4; i++)
-      {
-        temp = col.GetNextToken();
-        long colour;
-        if (temp.ToLong( &colour)) FontColour[i] = colour;
-      }
-    }
-    else if  (command == "TextureColour")
+/*
+    if (NumberOfChecked>=LengthOfChecked)
     {
-      temp = line.AfterFirst(':');
-
-      wxStringTokenizer col( temp, ",");
-
-      int num_col = col.CountTokens();
-      for (int i=0; i<num_col && i<4; i++)
-      {
-        temp = col.GetNextToken();
-        long colour;
-        if (temp.ToLong( &colour)) TextureColour[i] = colour;
-      }
+      bool *t_bool;
+      try {t_bool = new bool [LengthOfChecked+100];}
+      catch (...) {return -1;}
+      for (int i=0; i<LengthOfChecked; i++) t_bool[i]=Checked[i];
+      delete [] Checked;
+      Checked = t_bool;
+      LengthOfChecked +=100;
     }
-    if (command == "ShowCollSettingsPane")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myShowCollSettingsPane = false;
-      else myShowCollSettingsPane = true;
-    }
-    else if (command == "SupportTPF")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') mySupportTPF = false;
-      else mySupportTPF = true;
-    }
-    else if (command == "ComputeRenderTargets")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myComputeRenderTargets = false;
-      else myComputeRenderTargets = true;
-    }
-    else if (command == "ExtractTexturesToDisk")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myExtractTexturesToDisk = false;
-      else myExtractTexturesToDisk = true;
-    }
-    else if (command == "DeleteExtractedTexturesOnDisk")
-    {
-      temp = line.AfterFirst(':');
-      if (temp.Len()>0 && temp[0]=='0') myDeleteExtractedTexturesOnDisk = false;
-      else myDeleteExtractedTexturesOnDisk = true;
-    }
-    else if (command == "ExtractPath") ExtractPath = line.AfterFirst(':');
-  }
-  if (SaveAllTextures && SaveSingleTexture)
-  {
-    SaveAllTextures = false;
-    SaveSingleTexture = false;
+    */
   }
   return 0;
 }
 
 
+int uMod_GameInfo::GetChecked( bool* array, int num) const
+{
+  for (int i=0; i<num && i<NumberOfChecked; i++) array[i] = Checked[i];
+  return 0;
+}
+
+int uMod_GameInfo::SetChecked( bool* array, int num)
+{
+  if (num>LengthOfChecked)
+  {
+    if (Checked!=NULL) delete [] Checked;
+    try {Checked = new bool [num+100];}
+    catch (...) {Checked=NULL; LengthOfChecked = 0; return -1;}
+    LengthOfChecked = num+100;
+  }
+  for (int i=0; i<num; i++) Checked[i] = array[i];
+  NumberOfChecked = num;
+  return 0;
+}
 
 int uMod_GameInfo::SetSaveSingleTexture(bool val)
 {
@@ -395,10 +293,18 @@ int uMod_GameInfo::SetSaveAllTextures(bool val)
   return 0;
 }
 
+void uMod_GameInfo::SetFiles(const wxArrayString &files)
+{
+  Files = files;
+}
+
+void uMod_GameInfo::GetFiles( wxArrayString &files) const
+{
+  files = Files;
+}
+
 uMod_GameInfo& uMod_GameInfo::operator = (const  uMod_GameInfo &rhs)
 {
-  myShowCollCapturePane = rhs.myShowCollCapturePane;
-
   SaveSingleTexture = rhs.SaveSingleTexture;
   SaveAllTextures = rhs.SaveAllTextures;
 
@@ -406,32 +312,21 @@ uMod_GameInfo& uMod_GameInfo::operator = (const  uMod_GameInfo &rhs)
   KeySave = rhs.KeySave;
   KeyNext = rhs.KeyNext;
 
-  myUseSizeFilter = rhs.myUseSizeFilter;
-  myHeightMin = rhs.myHeightMin;
-  myHeightMax = rhs.myHeightMax;
-  myWidthMin = rhs.myWidthMin;
-  myWidthMax = rhs.myWidthMax;
-  myDepthMin = rhs.myDepthMin;
-  myDepthMax = rhs.myDepthMax;
-
-  myUseFormatFilter = rhs.myUseFormatFilter;
-  myFormatFilter = rhs.myFormatFilter;
-  myFileFormat = rhs.myFileFormat;
-
-  myShowSingleTextureString = rhs.myShowSingleTextureString;
-
-  for (int i=0; i<4; i++) FontColour[i]=rhs.FontColour[i];
-  for (int i=0; i<4; i++) TextureColour[i]=rhs.TextureColour[i];
+  if (LengthOfChecked<rhs.LengthOfChecked)
+  {
+    if (Checked!=NULL) delete [] Checked;
+    Checked = new bool [rhs.LengthOfChecked];
+    LengthOfChecked = rhs.LengthOfChecked;
+  }
+  NumberOfChecked = rhs.NumberOfChecked;
+  for (int i=0; i<NumberOfChecked; i++) Checked[i] = rhs.Checked[i];
 
   SavePath = rhs.SavePath;
   OpenPath = rhs.OpenPath;
-  ExtractPath = rhs.ExtractPath;
+  Files = rhs.Files;
 
-  myShowCollSettingsPane = rhs.myShowCollSettingsPane;
-  mySupportTPF = rhs.mySupportTPF;
-  myComputeRenderTargets = rhs.myComputeRenderTargets;
-  myExtractTexturesToDisk = rhs.myExtractTexturesToDisk;
-  ExtractPath = rhs.ExtractPath;
+  for (int i=0; i<3; i++) FontColour[i]=rhs.FontColour[i];
+  for (int i=0; i<3; i++) TextureColour[i]=rhs.TextureColour[i];
 
   return *this;
 }
